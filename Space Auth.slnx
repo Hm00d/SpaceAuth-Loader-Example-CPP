@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Space Auth/Space Auth.vcxproj" Id="1e6ed21a-e19e-4dd5-b667-4b41e131ce40" />
+</Solution>

@@ -1,173 +1,146 @@
 # Space Auth C++ Loader
 
-Space Auth C++ Loader is a ready-to-ship Windows loader package for protected
-Space Auth applications. It includes the public C++ SDK header, the x64 release
-library, a compiled loader, runtime DLLs, and clean examples that show both the
-simple protected-loader flow and the manual API flow.
+Ready Windows C++ loader project for a Space Auth application.
 
-The goal is simple: initialize your application, validate a license, keep the
-session alive, enforce blacklist and anti-crack rules, then download and launch
-the protected file that belongs to that application.
+This repo is meant to be opened in Visual Studio, configured with your
+application values, built as x64 Release, then shipped with the required runtime
+DLLs beside the EXE.
 
-## What is Space Auth?
+## Project Layout
 
-Space Auth is a licensing and protection platform for software developers. It
-helps you manage applications, licenses, subscriptions, hosted files, runtime
-variables, sessions, release checks, access rules, and client security events
-from one dashboard.
-
-The C++ SDK is designed for Windows loaders and protected desktop applications.
-It keeps important enforcement on the server while giving the client a compact
-API for license login, blacklist checks, protected downloads, anti-crack reports,
-live heartbeat checks, and diagnostics.
-
-## Package Contents
-
-This release package contains:
-
-- `bin/x64/Space Auth.exe` - compiled x64 loader from the current build.
-- `bin/x64/libcurl.dll` - runtime DLL required by the loader.
-- `bin/x64/libcrypto-3-x64.dll` - OpenSSL runtime DLL required by the loader.
-- `bin/x64/z.dll` - zlib runtime DLL required by the loader.
-- `include/auth.hpp` - public C++ SDK header.
-- `lib/x64/Space Auth.lib` - x64 release static/import library.
-- `src/main.cpp` - production loader source used for this build.
-- `examples/main.cpp` - clean starter example for your own loader.
-
-Keep the DLL files beside your final EXE unless your project links and deploys
-those dependencies another way.
+```text
+Space Auth Loader/
+  README.md
+  Space Auth.slnx
+  Space Auth/
+    Space Auth.cpp
+    auth.hpp
+    Space Auth.lib
+    Space Auth.vcxproj
+    x64/Release/
+      Space Auth.exe
+      libcurl.dll
+      libcrypto-3-x64.dll
+      z.dll
+```
 
 ## Requirements
 
 - Windows 10 or Windows 11.
-- Visual Studio with the MSVC x64 C++ toolchain.
-- C++20 enabled.
-- Build platform set to `x64`.
-- HTTPS backend URL for production.
-- A Space Auth dashboard application with matching settings.
+- Visual Studio with MSVC C++ x64 tools.
+- C++20.
+- Release x64 build.
+- Your backend URL must be reachable over HTTPS in production.
 
-## Dashboard Setup
+## Configure The Loader
 
-Before compiling your loader, create or open your application in the Space Auth
-dashboard and make sure these values are ready:
+Open:
 
-1. Application Name
-2. App Public ID
-3. Current Version
-4. Backend URL
-5. License keys or subscriptions
-6. Hosted file ID if your loader downloads a protected file
-7. Anti Crack setting if you want security reports and automatic blacklist rules
-
-The application name compiled in the loader must exactly match the dashboard
-application name. If it does not match, the encrypted handshake is rejected.
-
-The App Public ID is public by design. It identifies the application, but it is
-not a secret. Never place server secrets, database credentials, dashboard tokens,
-or private webhook URLs in a client binary.
-
-## Quick Start
-
-This is the recommended starter style. It behaves like a complete loader with a
-single configuration object.
-
-```cpp
-#include <iostream>
-#include "auth.hpp"
-
-int main() {
-    SpaceAuth::protected_loader_options options{};
-    options.app_name = SA_OBF("Your Application Name");
-    options.app_public_id = SA_OBF("YOUR_APP_PUBLIC_ID");
-    options.version = SA_OBF("1.0.0");
-    options.base_url = SA_OBF("https://your-domain.com");
-    options.device_label = SA_OBF("Windows Loader");
-    options.file_id = SA_OBF("your-file-word");
-    options.output_file_name = SA_OBF("protected_payload.exe");
-
-    options.heartbeat_interval_seconds = 20;
-    options.heartbeat_offline_grace_seconds = 300;
-    options.security_poll_seconds = 2;
-    options.diagnostics_poll_seconds = 7;
-    options.launch_after_download = true;
-    options.pause_before_exit = true;
-
-    try {
-        return SpaceAuth::run_protected_loader(options);
-    } catch (const std::exception& error) {
-        std::cerr << "Space Auth loader failed: " << error.what() << "\n";
-        return 1;
-    }
-}
+```text
+Space Auth/Space Auth.cpp
 ```
 
-`run_protected_loader` handles the common loader flow:
-
-- Encrypted client handshake
-- Application name verification
-- Runtime application status checks
-- Blacklist check
-- License key login
-- Anti Crack startup check
-- Anti Crack background monitor
-- Live heartbeat monitor
-- Diagnostics polling
-- Protected file download
-- Optional protected file launch
-- Logout on clean exit
-
-## Instance Definition
-
-Use the `api` class when you want full control over each step.
+Edit these values:
 
 ```cpp
-#include "auth.hpp"
+std::string name = SA_OBF("Your Application Name");
+std::string appid = SA_OBF("YOUR_APP_PUBLIC_ID");
+std::string version = SA_OBF("1.0.0");
+std::string url = SA_OBF("https://your-domain.com");
 
-SpaceAuth::api SpaceAuthApp(
-    SA_OBF("Your Application Name"),
-    SA_OBF("YOUR_APP_PUBLIC_ID"),
-    SA_OBF("1.0.0"),
-    SA_OBF("https://your-domain.com"),
-    SA_OBF("Windows Loader")
-);
+api SpaceAuthApp(name, appid, version, url);
 ```
 
-Parameters:
+Required match rules:
 
-- `app_name` - must match the dashboard application name exactly.
-- `app_public_id` - copied from the dashboard application.
-- `version` - client version you want the backend to validate.
-- `url` - your Space Auth backend URL.
-- `device_label` - readable label shown in logs/sessions.
+- `name` must exactly match the application name in the dashboard.
+- `appid` must match the App Public ID in the dashboard.
+- `version` must match the application version configured in the dashboard.
+- `url` must point to your backend.
 
-Optional constructor parameters also allow a custom HWID hash, client token, and
-anti-debug state. Most loaders should keep the default values unless they have a
-specific integration reason.
+If the version is changed and does not match the dashboard version, the backend
+rejects the loader.
 
-## Initialize Application
+## Build
 
-You must call `init()` before using authenticated SDK features.
+1. Open `Space Auth.slnx` in Visual Studio.
+2. Select `Release`.
+3. Select `x64`.
+4. Build the project.
+
+Output:
+
+```text
+Space Auth/x64/Release/Space Auth.exe
+```
+
+Keep these files beside the EXE:
+
+```text
+libcurl.dll
+libcrypto-3-x64.dll
+z.dll
+```
+
+## Basic Flow
+
+The included loader does this:
+
+1. Connects to the backend.
+2. Validates application name, App Public ID, and version.
+3. Checks blacklist status.
+4. Asks for a license key.
+5. Starts runtime security monitors.
+6. Downloads the configured protected file.
+7. Launches it.
+8. Logs out on exit.
+
+## Protected File
+
+In `Space Auth.cpp`, update the file ID and output filename if needed:
+
+```cpp
+const std::string saved_path = download_and_launch(
+    SpaceAuthApp,
+    SA_OBF("your-file-id"),
+    SA_OBF("protected.exe"),
+    true);
+```
+
+The file ID must belong to the same application.
+
+## Important API Data
+
+Most SDK calls update:
+
+```cpp
+SpaceAuthApp.response
+```
+
+Useful fields:
+
+- `response.success` - `true` when the last call worked.
+- `response.code` - backend error/success code.
+- `response.message` - readable status message.
+- `response.session_id` - current runtime session ID when available.
+
+Example:
 
 ```cpp
 SpaceAuthApp.init();
+
 if (!SpaceAuthApp.response.success) {
-    std::cout << "\nStatus: " << SpaceAuthApp.response.message << "\n";
+    std::cout << SpaceAuthApp.response.message << "\n";
     return 1;
 }
 ```
 
-After init, the SDK fills `SpaceAuthApp.app_data` with runtime information such
-as status, version rules, update state, and Anti Crack setting.
+## Application Data
 
-## Application Runtime Data
+After `init()`, runtime settings are available in:
 
 ```cpp
-std::cout << "Application: " << SpaceAuthApp.app_data.name << "\n";
-std::cout << "Status: " << SpaceAuthApp.app_data.status << "\n";
-std::cout << "Latest version: " << SpaceAuthApp.app_data.latest_version << "\n";
-std::cout << "Anti Crack: "
-          << (SpaceAuthApp.app_data.anti_crack_enabled ? "active" : "disabled")
-          << "\n";
+SpaceAuthApp.app_data
 ```
 
 Useful fields:
@@ -181,14 +154,14 @@ Useful fields:
 - `download_url`
 - `disabled_reason`
 - `maintenance_message`
-- `force_update_enabled`
 - `update_available`
 - `update_required`
 - `anti_crack_enabled`
+- `min_sdk_version`
+- `sdk_update_url`
+- `sdk_update_required`
 
-## Check Application State
-
-You can block disabled applications or required updates immediately after init.
+Example:
 
 ```cpp
 if (SpaceAuthApp.app_data.status == SA_OBF("disabled")) {
@@ -197,23 +170,25 @@ if (SpaceAuthApp.app_data.status == SA_OBF("disabled")) {
 }
 
 if (SpaceAuthApp.app_data.update_required) {
-    std::cout << "Required update available: "
-              << SpaceAuthApp.app_data.latest_version << "\n";
+    std::cout << "Loader update required.\n";
     return 1;
 }
 ```
 
-## Check Blacklist Status
+## Blacklist
 
-Call this early if you do not want blacklisted devices to reach the login prompt.
+Use `checkblack()` before asking for a license key:
 
 ```cpp
 const auto blacklist = SpaceAuthApp.checkblack();
+
 if (blacklist.blacklisted) {
     std::cout << "This device is blacklisted.\n";
+
     if (!blacklist.reason.empty()) {
         std::cout << "Reason: " << blacklist.reason << "\n";
     }
+
     return 1;
 }
 ```
@@ -225,256 +200,124 @@ Returned fields:
 - `match_value`
 - `reason`
 
-## Login With License Key
-
-Use `license()` when your application only needs license-key login.
+## License Login
 
 ```cpp
-std::string key;
+std::string license_key;
 std::cout << "Enter license key: ";
-std::getline(std::cin >> std::ws, key);
+std::getline(std::cin >> std::ws, license_key);
 
-SpaceAuthApp.license(key);
+SpaceAuthApp.license(license_key);
+
 if (!SpaceAuthApp.response.success) {
-    std::cout << "\nStatus: " << SpaceAuthApp.response.message << "\n";
+    std::cout << SpaceAuthApp.response.message << "\n";
     return 1;
 }
 ```
 
-After successful login, `SpaceAuthApp.user_data` contains the license
-subscription information returned by the backend.
-
-## User Data
+After a successful login, user data is available in:
 
 ```cpp
-std::cout << "Session ID: " << SpaceAuthApp.response.session_id << "\n";
-
-if (!SpaceAuthApp.user_data.subscription.name.empty()) {
-    std::cout << "Subscription: "
-              << SpaceAuthApp.user_data.subscription.name << "\n";
-}
-
-if (!SpaceAuthApp.user_data.license_expires_at.empty()) {
-    std::cout << "License expires at: "
-              << SpaceAuthApp.user_data.license_expires_at << "\n";
-}
+SpaceAuthApp.user_data
 ```
 
 Useful fields:
 
 - `license_expires_at`
-- `subscription.id`
 - `subscription.name`
 - `subscription.level`
-- `subscription.status`
 - `subscriptions`
 
-## Check Session Validation
+## Runtime Monitors
 
-Use `check()` to verify that the current session is still valid.
-
-```cpp
-if (!SpaceAuthApp.check()) {
-    std::cout << "Session check failed: "
-              << SpaceAuthApp.response.message << "\n";
-    return 1;
-}
-```
-
-For continuous checking, prefer the live heartbeat monitor.
-
-## Live Heartbeat Monitor
-
-The heartbeat monitor checks the session in the background and calls your
-callback if the backend says the client should exit.
-
-```cpp
-SpaceAuthApp.start_heartbeat(
-    20,
-    300,
-    [](const SpaceAuth::LiveGuardEvent& event) {
-        std::cerr << "Live guard: " << event.message << "\n";
-        if (!event.code.empty()) {
-            std::cerr << "Code: " << event.code << "\n";
-        }
-        std::exit(1);
-    });
-
-// Before clean exit:
-SpaceAuthApp.stop_heartbeat();
-```
-
-Parameters:
-
-- `interval_seconds` - how often the client checks in.
-- `offline_grace_seconds` - how long the client can tolerate network problems.
-- `callback` - called when the guard wants the client to exit.
-
-## Protected Loader Runtime
-
-`protected_loader_runtime` is a helper that manages the security monitor,
-heartbeat, and diagnostics threads for manual API users.
+Use `protected_loader_runtime` to keep the loader protected after login:
 
 ```cpp
 SpaceAuth::protected_loader_runtime runtime(SpaceAuthApp);
 
-if (SpaceAuthApp.app_data.anti_crack_enabled &&
-    !runtime.start_anti_crack(2, SA_OBF("startup_security_check_failed"))) {
-    return 1;
-}
-
-runtime.start_live_guard(20, 300);
-runtime.start_diagnostics(7);
-
-// Your protected work here.
-
-runtime.stop();
+runtime.start_anti_crack();
+runtime.start_live_guard();
+runtime.start_diagnostics();
 ```
 
-Use this helper when you want a KeyAuth-like manual flow but do not want to
-rewrite the background thread handling yourself.
+Useful methods:
 
-## Anti Crack Guard
+- `start_anti_crack()` - detects debugging/tampering and reports it.
+- `start_live_guard()` - keeps the session alive and exits if revoked.
+- `start_diagnostics()` - handles dashboard diagnostic requests.
+- `stop()` - stops background monitors before exit.
 
-The SDK includes `auth_guard` for client-side security checks.
+## API Reference
+
+### Initialization
 
 ```cpp
-SpaceAuth::auth_guard::capture_baseline();
-
-if (!SpaceAuth::auth_guard::enforce(
-        &SpaceAuthApp,
-        true,
-        SA_OBF("runtime_integrity_failed"))) {
-    return 1;
-}
+SpaceAuthApp.init();
+SpaceAuthApp.fetch_runtime();
+SpaceAuthApp.logout();
 ```
 
-When `ban_on_fail` is `true`, a security failure is reported to the backend. The
-backend can create or reuse blacklist rules and log evidence for the application
-owner.
+- `init()` - opens the secure runtime session and loads app rules.
+- `fetch_runtime()` - refreshes app runtime settings without license login.
+- `logout()` - closes the current session.
 
-Anti Crack reports can include:
-
-- Detection code
-- Detector name
-- Human-readable message
-- Blacklist application state
-- Running process inventory
-- Suspicious process/window information
-- PNG screenshot evidence when screenshot capture is available
-
-The client closes after the report path finishes. This protects the application
-from continuing under a suspicious runtime.
-
-## Report Anti Crack Manually
-
-Use this if your own detector catches something suspicious.
+### Session Checks
 
 ```cpp
-SpaceAuthApp.report_anti_crack(
-    SA_OBF("CUSTOM_SECURITY_DETECTION"),
-    SA_OBF("Suspicious behavior detected by custom guard."),
-    SA_OBF("custom_guard"),
-    SA_OBF("optional evidence text"),
-    true);
+bool ok = SpaceAuthApp.check();
+bool active = SpaceAuthApp.is_authenticated();
 ```
 
-The last parameter controls whether the backend should apply a blacklist/ban
-action for the security event.
+- `check()` - validates the current live session.
+- `is_initialized()` - returns whether `init()` succeeded.
+- `is_authenticated()` - returns whether a license/web login is active.
+- `subscription_active("pro")` - checks if the current user has a subscription name.
 
-## Application Variables
-
-Application variables are server-side values configured in the dashboard.
+### Variables
 
 ```cpp
-std::string status = SpaceAuthApp.var(SA_OBF("status"));
-std::cout << "status = " << status << "\n";
+std::string global_value = SpaceAuthApp.var(SA_OBF("status"));
+std::string user_value = SpaceAuthApp.getvar(SA_OBF("discord"));
+
+SpaceAuthApp.setvar(SA_OBF("discord"), SA_OBF("user#0001"));
 ```
 
-Variables can be global or authenticated depending on dashboard settings.
+- `var(key)` - reads an application/global variable.
+- `getvar(key)` - reads a user/license variable.
+- `setvar(key, value)` - writes a user/license variable.
 
-## User Variables
-
-User variables belong to a license/user context.
-
-```cpp
-std::string discord = SpaceAuthApp.getvar(SA_OBF("discord"));
-std::cout << "discord = " << discord << "\n";
-```
-
-Set a user variable:
-
-```cpp
-SpaceAuthApp.setvar(SA_OBF("discord"), SA_OBF("test#0001"));
-if (!SpaceAuthApp.response.success) {
-    std::cout << SpaceAuthApp.response.message << "\n";
-}
-```
-
-## Application Logs
-
-Use `log()` for important application events. Logs are stored in the Space Auth
-dashboard.
+### Logs
 
 ```cpp
 SpaceAuthApp.log(
     SA_OBF("Loader login completed."),
-    SA_OBF("loader.license_login"));
+    SA_OBF("loader.license_login")
+);
 ```
 
-Discord webhook forwarding is disabled in this package until it is enabled again
-on the backend. Dashboard logs still work.
+- `log(message, event_type)` - writes a client event to dashboard logs.
 
-Do not log raw passwords, private tokens, full secrets, or sensitive file bytes.
-
-## Ban The Current Client
-
-Use `ban()` after login when your application decides the current client should
-be blocked.
-
-```cpp
-SpaceAuthApp.ban(SA_OBF("Manual security ban"));
-if (!SpaceAuthApp.response.success) {
-    std::cout << SpaceAuthApp.response.message << "\n";
-}
-```
-
-For pre-login security detections, use `report_anti_crack(..., true)` or
-`auth_guard::enforce(&app, true, reason)`.
-
-## Web Login
-
-Use web login if you want the customer to authenticate through the website.
+### Web Login And Buttons
 
 ```cpp
 SpaceAuthApp.web_login(900, true);
-if (!SpaceAuthApp.response.success) {
-    std::cout << SpaceAuthApp.response.message << "\n";
-    return 1;
-}
-
-SpaceAuthApp.button(SA_OBF("continue"), 2);
+SpaceAuthApp.button(SA_OBF("start"), 2);
 ```
 
-Parameters:
+- `web_login(timeout_seconds, open_browser)` - starts a web loader login flow.
+- `button(key, poll_interval_seconds)` - waits for a dashboard/web-loader button command.
 
-- `timeout_seconds` - how long to wait for the website login.
-- `open_browser` - whether the SDK should open the browser automatically.
-- `button()` waits for a named web loader button/action.
-
-## Release Check
-
-Use release checks when your dashboard manages channels or required versions.
+### Releases
 
 ```cpp
-const auto release = SpaceAuthApp.check_release(SA_OBF("stable"));
-if (release.update_required) {
-    std::cout << "Required version: " << release.latest_version << "\n";
-    return 1;
+auto release = SpaceAuthApp.check_release(SA_OBF("stable"));
+
+if (release.found && release.update_available) {
+    std::cout << "Latest: " << release.latest_version << "\n";
 }
 ```
 
-Returned fields:
+`ReleaseInfo` fields:
 
 - `found`
 - `download_authorized`
@@ -488,312 +331,215 @@ Returned fields:
 - `file_name`
 - `sha256`
 
-## Download Protected File
-
-`download()` returns bytes for a protected dashboard file.
+### Download Bytes
 
 ```cpp
-std::vector<std::uint8_t> bytes = SpaceAuthApp.download(SA_OBF("your-file-word"));
+auto bytes = SpaceAuthApp.download(SA_OBF("your-file-id"));
+
 if (!SpaceAuthApp.response.success) {
-    std::cout << "Download failed: "
-              << SpaceAuthApp.response.message << "\n";
-    return 1;
-}
-
-std::ofstream file("protected_payload.exe", std::ios::binary);
-file.write(reinterpret_cast<const char*>(bytes.data()),
-           static_cast<std::streamsize>(bytes.size()));
-```
-
-The file ID must be the exact file word shown in the Files page of the
-dashboard. File IDs are application-scoped, and the backend authorizes the
-download against the current application/session.
-
-## Download And Launch Helper
-
-For loaders, use `download_and_launch()`.
-
-```cpp
-const std::string saved_path = SpaceAuth::download_and_launch(
-    SpaceAuthApp,
-    SA_OBF("your-file-word"),
-    SA_OBF("protected_payload.exe"),
-    true);
-
-if (!SpaceAuthApp.response.success || saved_path.empty()) {
     std::cout << SpaceAuthApp.response.message << "\n";
+}
+```
+
+- `download(file_id)` - downloads a hosted file as bytes.
+- `download_and_launch(app, file_id, output_file_name, true)` - downloads to disk and optionally launches.
+
+### Manual Anti Crack
+
+```cpp
+auto check = SpaceAuth::auth_guard::check();
+
+if (!check.ok) {
+    SpaceAuthApp.report_anti_crack(
+        check.code,
+        check.message,
+        check.detector,
+        check.evidence,
+        true
+    );
     return 1;
 }
 ```
 
-Parameters:
+Useful security fields:
 
-- `app` - initialized and authenticated `SpaceAuth::api` instance.
-- `file_id` - dashboard file word.
-- `output_file_name` - local filename to write.
-- `launch_after_download` - launches the file after saving when `true`.
+- `ok`
+- `debugger_detected`
+- `memory_modified`
+- `code`
+- `message`
+- `detector`
+- `evidence`
 
-The SDK sanitizes the output filename before writing to disk.
+Manual helpers:
 
-## Diagnostics
+- `auth_guard::capture_baseline()` - captures process baseline.
+- `auth_guard::check()` - returns a security result.
+- `auth_guard::enforce(&app, true, "reason")` - reports and blocks on failure.
+- `report_anti_crack(...)` - sends a security event to logs and can blacklist.
+- `ban(reason)` - manually requests a blacklist/ban action.
 
-Diagnostics allow the dashboard to request client-side information from an
-active loader session.
-
-```cpp
-std::size_t handled = SpaceAuthApp.process_diagnostics(true);
-std::cout << "Diagnostics handled: " << handled << "\n";
-```
-
-Manual flow:
+### Diagnostics
 
 ```cpp
 auto requests = SpaceAuthApp.diagnostics();
+
 for (const auto& request : requests) {
     SpaceAuthApp.respond_diagnostic(
         request.id,
         SA_OBF("completed"),
-        SA_OBF("text/plain"),
-        std::string(),
-        SA_OBF("Diagnostic completed."));
-}
-```
-
-Most loaders should use `protected_loader_runtime::start_diagnostics()` instead
-of manually polling.
-
-## Logout
-
-Call `logout()` before a clean exit.
-
-```cpp
-SpaceAuthApp.stop_heartbeat();
-SpaceAuthApp.logout();
-```
-
-If you use `protected_loader_runtime`, call `runtime.stop()` before `logout()`.
-
-## Complete Manual Example
-
-```cpp
-#include <fstream>
-#include <iostream>
-#include <string>
-#include "auth.hpp"
-
-int main() {
-    SpaceAuth::api app(
-        SA_OBF("Your Application Name"),
-        SA_OBF("YOUR_APP_PUBLIC_ID"),
-        SA_OBF("1.0.0"),
-        SA_OBF("https://your-domain.com"),
-        SA_OBF("Windows Loader")
+        {},
+        {},
+        SA_OBF("Handled by loader")
     );
-
-    app.init();
-    if (!app.response.success) {
-        std::cout << app.response.message << "\n";
-        return 1;
-    }
-
-    SpaceAuth::protected_loader_runtime runtime(app);
-    if (app.app_data.anti_crack_enabled &&
-        !runtime.start_anti_crack(2, SA_OBF("startup_security_check_failed"))) {
-        return 1;
-    }
-
-    const auto blacklist = app.checkblack();
-    if (blacklist.blacklisted) {
-        std::cout << "Blacklisted: " << blacklist.reason << "\n";
-        return 1;
-    }
-
-    std::string key;
-    std::cout << "Enter license key: ";
-    std::getline(std::cin >> std::ws, key);
-
-    app.license(key);
-    if (!app.response.success) {
-        std::cout << app.response.message << "\n";
-        return 1;
-    }
-
-    runtime.start_live_guard(20, 300);
-    runtime.start_diagnostics(7);
-
-    app.log(SA_OBF("Loader login completed."), SA_OBF("loader.license_login"));
-
-    const std::string path = SpaceAuth::download_and_launch(
-        app,
-        SA_OBF("your-file-word"),
-        SA_OBF("protected_payload.exe"),
-        true);
-
-    if (!app.response.success || path.empty()) {
-        std::cout << app.response.message << "\n";
-        runtime.stop();
-        app.logout();
-        return 1;
-    }
-
-    std::cout << "Protected file launched: " << path << "\n";
-
-    runtime.stop();
-    app.logout();
-    return 0;
 }
 ```
 
-## Build With Visual Studio
+- `diagnostics()` - reads pending diagnostic requests.
+- `respond_diagnostic(...)` - responds to one request.
+- `process_diagnostics(true)` - polls and handles diagnostics automatically.
 
-Recommended project settings:
+`diagnostic_request` fields:
 
-1. Create or open a C++ project.
-2. Set the platform to `x64`.
-3. Set the language standard to C++20.
-4. Add `include` to your Additional Include Directories.
-5. Add `lib/x64` to your Additional Library Directories.
-6. Add `Space Auth.lib` to Additional Dependencies.
-7. Copy `libcurl.dll`, `libcrypto-3-x64.dll`, and `z.dll` beside your output EXE.
-8. Build in Release x64 for shipping.
+- `id`
+- `type`
+- `prompt`
+- `requested_at`
+- `expires_at`
 
-Example layout:
+### Heartbeat
 
-```text
-YourLoader/
-  include/
-    auth.hpp
-  lib/
-    x64/
-      Space Auth.lib
-  bin/
-    x64/
-      libcurl.dll
-      libcrypto-3-x64.dll
-      z.dll
-  src/
-    main.cpp
+```cpp
+SpaceAuthApp.start_heartbeat(20, 300, [](const SpaceAuth::LiveGuardEvent& event) {
+    std::cerr << event.message << "\n";
+    std::exit(1);
+});
+
+SpaceAuthApp.stop_heartbeat();
 ```
 
-## Build From Developer Command Prompt
+`LiveGuardEvent` fields:
 
-Visual Studio projects are recommended, but a simple command-line build can look
-like this:
+- `should_exit`
+- `network_issue`
+- `code`
+- `message`
 
-```bat
-cl /std:c++20 /EHsc /I include examples\main.cpp /link /LIBPATH:lib\x64 "Space Auth.lib"
+### Full Config Object
+
+Use `ClientConfig` only when you need lower-level control:
+
+```cpp
+SpaceAuth::ClientConfig config{};
+config.base_url = SA_OBF("https://your-domain.com");
+config.app_public_id = SA_OBF("YOUR_APP_PUBLIC_ID");
+config.app_version = SA_OBF("1.0.0");
+config.app_name = SA_OBF("Your Application Name");
+config.client_token = SA_OBF("optional-client-token");
+
+SpaceAuth::api app(config);
 ```
 
-Copy the runtime DLLs next to the generated EXE before running it.
+Common fields:
 
-## Shipping Checklist
+- `base_url`
+- `app_public_id`
+- `app_version`
+- `app_name`
+- `hwid_hash`
+- `client_hash`
+- `client_token`
+- `anti_debug_passed`
+- `sdk_version`
+- `sdk_build_id`
 
-Before sending a loader to customers:
+Most loaders should use the simple constructor unless they need these advanced
+fields.
 
-- Dashboard application name matches `options.app_name`.
-- App Public ID matches `options.app_public_id`.
-- Version matches your dashboard rules.
-- Hosted file exists and the loader uses the correct file ID word.
-- License/subscription rules are tested.
-- Anti Crack is enabled if you expect security reports.
-- Runtime DLLs are beside the EXE.
-- Backend is deployed with the latest API build.
-- HTTPS works on the production domain.
-- No secrets are committed to GitHub.
-- Debug messages and test file IDs are removed.
-- The final EXE is tested from a clean folder.
+### One-Call Loader
+
+For a compact loader, use `run_protected_loader`:
+
+```cpp
+SpaceAuth::protected_loader_options options{};
+options.app_name = SA_OBF("Your Application Name");
+options.app_public_id = SA_OBF("YOUR_APP_PUBLIC_ID");
+options.version = SA_OBF("1.0.0");
+options.base_url = SA_OBF("https://your-domain.com");
+options.file_id = SA_OBF("your-file-id");
+options.output_file_name = SA_OBF("protected.exe");
+
+return SpaceAuth::run_protected_loader(options);
+```
+
+Useful options:
+
+- `app_name`
+- `app_public_id`
+- `version`
+- `base_url`
+- `file_id`
+- `output_file_name`
+- `heartbeat_interval_seconds`
+- `heartbeat_offline_grace_seconds`
+- `security_poll_seconds`
+- `diagnostics_poll_seconds`
+- `launch_after_download`
+- `pause_before_exit`
+
+### SDK Helpers
+
+```cpp
+std::cout << SpaceAuthApp.client_hash() << "\n";
+std::cout << SpaceAuthApp.sdk_version() << "\n";
+std::cout << SpaceAuthApp.sdk_build_id() << "\n";
+```
+
+- `client_hash()` - current executable hash used by hash checks.
+- `sdk_version()` - SDK version compiled into the loader.
+- `sdk_build_id()` - SDK build identifier.
+
+## SDK Version Gate
+
+The SDK has its own version:
+
+```cpp
+SpaceAuth::SDK_VERSION
+SpaceAuth::SDK_BUILD_ID
+```
+
+The platform admin can block old SDK builds from the admin panel. This is
+separate from the application version in `Space Auth.cpp`.
 
 ## Common Errors
 
-### APPLICATION_NAME_MISMATCH
+`APPLICATION_NAME_MISMATCH`
 
-The application name compiled into the loader does not exactly match the
-dashboard application name. Check spaces, capitalization, and hidden characters.
+The compiled app name does not match the dashboard application name.
 
-### APP_NOT_FOUND
+`APPLICATION_VERSION_MISMATCH`
 
-The App Public ID is wrong, deleted, or belongs to another application.
+The loader version does not match the dashboard application version.
 
-### LICENSE_INVALID
+`SDK_UPDATE_REQUIRED`
 
-The license key is invalid, expired, inactive, already bound incorrectly, banned,
-or not allowed by the current subscription/application rules.
+The SDK build is older than the platform minimum SDK version.
 
-### HWID_SESSION_MISMATCH
+`LICENSE_INVALID`
 
-The session is being reused from another device or the HWID/session state no
-longer matches the backend.
+The license key is invalid, expired, banned, or not allowed for this app.
 
-### Protected download failed
+`Protected download failed`
 
-Check that the file ID word is correct, the file belongs to the same
-application, the license has access, the backend can read the hosted file, and
-the output filename is valid.
+Check the file ID, license access, hosted file status, and backend deployment.
 
-### Security check failed
+`Missing DLL`
 
-Anti Crack detected a debugger, suspicious window, hook, memory modification, or
-other analysis signal. The SDK reports the event and closes the loader.
+Put `libcurl.dll`, `libcrypto-3-x64.dll`, and `z.dll` next to the EXE.
 
-### No screenshot in logs
+## Notes
 
-Screenshot capture depends on Windows desktop access. If a screenshot is not
-available, the backend should still receive the Anti Crack event and process
-inventory. Test from an interactive desktop session, not a locked or headless
-session.
-
-### Missing DLL error
-
-Place `libcurl.dll`, `libcrypto-3-x64.dll`, and `z.dll` in the same folder as
-your EXE.
-
-## Security Practices
-
-Client-side code can always be inspected by a determined attacker, so treat the
-loader as one layer of protection, not the whole system.
-
-Recommended practices:
-
-- Keep license validation, file authorization, blacklist rules, and subscription
-  checks server-side.
-- Use HTTPS only.
-- Do not store server secrets in the client.
-- Use `SA_OBF(...)` for static strings that appear in the binary.
-- Keep Anti Crack enabled for production loaders.
-- Keep heartbeat enabled so sessions can be revoked while running.
-- Check blacklist status before login.
-- Obfuscate and protect final production builds with your chosen commercial
-  protector if needed.
-- Do not write downloaded sensitive payloads to predictable public locations.
-- Keep logs useful but avoid storing private customer secrets.
-
-`SA_OBF(...)` helps hide static strings from simple string scans. It is not a
-replacement for backend enforcement.
-
-## Privacy And Compliance Note
-
-Anti Crack evidence may include a screenshot and running process inventory when
-a suspicious event is detected. Make sure your customer terms clearly explain
-that security evidence can be collected after tampering, debugging, dumping, or
-analysis attempts.
-
-## Support Notes
-
-When reporting an integration issue, include:
-
-- SDK/package version.
-- Visual Studio version.
-- Build platform.
-- Backend URL domain only, not secrets.
-- The `response.code` and `response.message`.
-- Whether the issue happens before init, after license login, during heartbeat,
-  or during protected download.
-
-Do not share license keys, database credentials, dashboard sessions, webhook
-URLs, or private customer data in public issue reports.
-
-## License
-
-This package is intended for applications owned by the Space Auth customer who
-received it. Do not publish private backend secrets, admin tokens, or customer
-data with your loader source.
+- Do not put backend secrets, admin tokens, database credentials, or private
+  webhook URLs in the loader.
+- Use `SA_OBF(...)` for static strings you compile into the EXE.
+- Test the final EXE from a clean folder before uploading it.

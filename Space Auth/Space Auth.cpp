@@ -11,9 +11,9 @@ using namespace SpaceAuth;
 
 namespace {
 
-    std::string name = SA_OBF("dfads");
-    std::string appid = SA_OBF("gGY0Vq4v64GyH9PFweEtNM0Z");
-    std::string version = SA_OBF("5342");
+	std::string name = SA_OBF("Your Application Name");
+	std::string appid = SA_OBF("YOUR_APP_PUBLIC_ID");
+	std::string version = SA_OBF("1.0.0");
     std::string url = SA_OBF("https://hmood.wtf");
 
     api SpaceAuthApp(name, appid, version, url);
@@ -91,7 +91,7 @@ int main() {
             pause_for_exit();
             return 1;
         }
-
+		
         std::cout << SA_OBF("\nProtected file launched.");
         std::cout << SA_OBF("\nAnti Crack: ")
             << (SpaceAuthApp.app_data.anti_crack_enabled ? SA_OBF("active") : SA_OBF("disabled"));
